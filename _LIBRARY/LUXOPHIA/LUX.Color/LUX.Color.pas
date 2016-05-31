@@ -97,13 +97,14 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        B :Single;
        A :Single;
        /////
-       constructor Create( const R_,G_,B_,A_:Single );
+       constructor Create( const R_,G_,B_:Single; const A_:Single = 1 );
        ///// プロパティ
        ///// 演算子
        class operator Negative( const V_:TSingleRGBA ) :TSingleRGBA;
        class operator Positive( const V_:TSingleRGBA ) :TSingleRGBA;
        class operator Add( const A_,B_:TSingleRGBA ) :TSingleRGBA;
        class operator Subtract( const A_,B_:TSingleRGBA ) :TSingleRGBA;
+       class operator Multiply( const A_,B_:TSingleRGBA ): TSingleRGBA;
        class operator Multiply( const A_:Single; const B_:TSingleRGBA ): TSingleRGBA;
        class operator Multiply( const A_:TSingleRGBA; const B_:Single ): TSingleRGBA;
        class operator Divide( const A_:TSingleRGBA; const B_:Single ): TSingleRGBA;
@@ -341,7 +342,7 @@ end;
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& public
 
-constructor TSingleRGBA.Create( const R_,G_,B_,A_:Single );
+constructor TSingleRGBA.Create( const R_,G_,B_:Single; const A_:Single = 1 );
 begin
      R := R_;
      G := G_;
@@ -392,6 +393,17 @@ begin
           G := A_.G - B_.G;
           B := A_.B - B_.B;
           A := A_.A - B_.A;
+     end;
+end;
+
+class operator TSingleRGBA.Multiply( const A_,B_:TSingleRGBA ): TSingleRGBA;
+begin
+     with Result do
+     begin
+          R := A_.R * B_.R;
+          G := A_.G * B_.G;
+          B := A_.B * B_.B;
+          A := A_.A * B_.A;
      end;
 end;
 
