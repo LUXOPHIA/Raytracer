@@ -24,7 +24,10 @@ uses
   LUX.Raytrace in '_LIBRARY\LUXOPHIA\LUX.Raytrace\LUX.Raytrace.pas',
   LUX.Raytrace.Render in '_LIBRARY\LUXOPHIA\LUX.Raytrace\LUX.Raytrace.Render.pas',
   LUX.Raytrace.Geometry in '_LIBRARY\LUXOPHIA\LUX.Raytrace\LUX.Raytrace.Geometry.pas',
-  LIB.Raytrace.Geometry in '_LIBRARY\LIB.Raytrace.Geometry.pas';
+  LIB.Raytrace.Geometry in '_LIBRARY\LIB.Raytrace.Geometry.pas',
+  LUX.Raytrace.Hit in '_LIBRARY\LUXOPHIA\LUX.Raytrace\LUX.Raytrace.Hit.pas',
+  LIB.Raytrace.Material in '_LIBRARY\LIB.Raytrace.Material.pas',
+  LIB.Raytrace in '_LIBRARY\LIB.Raytrace.pas';
 
 {$R *.res}
 

@@ -6,8 +6,9 @@ uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs,
   FMX.StdCtrls, FMX.Controls.Presentation, FMX.Objects, FMX.Edit,
-  LUX.Matrix.L4, LUX.Raytrace, LUX.Raytrace.Geometry, LUX.Raytrace.Material, LUX.Raytrace.Render,
-  LIB.Raytrace.Geometry;
+  LUX.Matrix.L4, LUX.Color,
+  LUX.Raytrace, LUX.Raytrace.Geometry, LUX.Raytrace.Material, LUX.Raytrace.Render,
+  LIB.Raytrace, LIB.Raytrace.Geometry, LIB.Raytrace.Material;
 
 type
   TForm1 = class(TForm)
@@ -31,6 +32,11 @@ type
     { public 宣言 }
     _Render :TRayRender;
     _World  :TRayWorld;
+    _Camera :TRayCamera;
+    _LightR :TRayLight;
+    _LightG :TRayLight;
+    _LightB :TRayLight;
+    _Ground :TRayGround;
     ///// メソッド
     procedure MakeScene;
   end;
@@ -42,6 +48,8 @@ implementation //###############################################################
 
 {$R *.fmx}
 
+uses System.Math;
+
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& private
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& public
@@ -52,26 +60,78 @@ procedure TForm1.MakeScene;
 var
    N :Integer;
 begin
-     for N := 1 to 10 do
+     ////////// 世界
+
+     _World := TRayWorld.Create;
+     with _World do
+     begin
+          Material := TMyMaterial.Create;
+     end;
+
+     _Render.World := _World;
+
+     ////////// カメラ
+
+     _Camera := TRayCamera.Create( _World );
+     with _Camera do
+     begin
+          LocalMatrix := TSingleM4.RotateX( DegToRad( -30 ) )
+                       * TSingleM4.Translate( 0, 0, 15 );
+     end;
+
+     _Render.Camera := _Camera;
+
+     ////////// ライト
+
+     _LightR := TRayLight.Create( _World );
+     with _LightR do
+     begin
+          LocalMatrix := TSingleM4.Translate( 0, 100, 50 );
+          Color       := TSingleRGBA.Create( 1, 0, 0 );
+     end;
+
+     _LightG := TRayLight.Create( _World );
+     with _LightG do
+     begin
+          LocalMatrix := TSingleM4.Translate( -50, 100, 0 );
+          Color       := TSingleRGBA.Create( 0, 1, 0 );
+     end;
+
+     _LightB := TRayLight.Create( _World );
+     with _LightB do
+     begin
+          LocalMatrix := TSingleM4.Translate( +50, 100, 0 );
+          Color       := TSingleRGBA.Create( 0, 0, 1 );
+     end;
+
+     ////////// 地面
+
+     _Ground := TRayGround.Create( _World );
+     with _Ground do
+     begin
+          LocalMatrix := TSingleM4.Translate( 0, -5, 0 );
+     end;
+
+     ////////// 球
+
+     for N := 1 to 100 do
      begin
           with TMyGeometry.Create( _World ) do
           begin
                Radius := Random;
 
-               LocalMatrix := LocalMatrix * TSingleM4.Translate( 8 * Random - 4, 6 * Random - 3, 6 * Random - 3 );
+               LocalMatrix := TSingleM4.Translate( 10 * Random - 5,
+                                                   10 * Random - 5,
+                                                   10 * Random - 5 );
           end;
      end;
-
 end;
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-     _World  := TRayWorld.Create;
-
      _Render := TRayRender.Create;
-     _Render.Scene := _World;
 
      MakeScene;
 end;
@@ -90,12 +150,10 @@ begin
      ButtonP.Enabled := False;
      ButtonS.Enabled := True ;
 
-     Image1.Bitmap.SetSize( 640, 480 );
-
      with _Render do
      begin
-          Pixels.BricX := 640;
-          Pixels.BricY := 480;
+          Pixels.BricX := EditIW.Text.ToInteger;
+          Pixels.BricY := EditIH.Text.ToInteger;
 
           Run;
 

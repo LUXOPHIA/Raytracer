@@ -2,7 +2,9 @@
 
 interface //#################################################################### ■
 
-uses LUX, LUX.D3, LUX.Raytrace.Geometry;
+uses LUX, LUX.D3, LUX.Matrix.L4,
+     LUX.Raytrace, LUX.Raytrace.Hit, LUX.Raytrace.Geometry,
+     LIB.Raytrace;
 
 type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【型】
 
@@ -19,7 +21,8 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        ///// アクセス
        procedure SetRadius( const Radius_:Single );
        ///// メソッド
-       function Raytrace( const Ray_:TSingleRay3D; var Hit_:TRayHit ) :Boolean; override;
+       procedure SetBoundingBox;
+       function RayCast( const Ray_:TRay ) :TRayHit; override;
      public
        constructor Create; override;
        destructor Destroy; override;
@@ -48,49 +51,47 @@ implementation //###############################################################
 
 procedure TMyGeometry.SetRadius( const Radius_:Single );
 begin
-     _Radius := Radius_;
+     _Radius := Radius_;  SetBoundingBox;
 end;
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& protected
 
 /////////////////////////////////////////////////////////////////////// メソッド
 
-function TMyGeometry.Raytrace( const Ray_:TSingleRay3D; var Hit_:TRayHit ) :Boolean;
+procedure TMyGeometry.SetBoundingBox;
+begin
+     _BoundingBox := TSingleArea3D.Create( -_Radius, -_Radius, -_Radius,
+                                           +_Radius, +_Radius, +_Radius );
+end;
+
+function TMyGeometry.RayCast( const Ray_:TRay ) :TRayHit;
 var
    B, C, D, T :Single;
 begin
+     Result := inherited;
+
      B := DotProduct( Ray_.Pos, Ray_.Vec );
      C := Ray_.Pos.Siz2 - Pow2( _Radius );
 
-     if ( C >= 0 ) and ( B >= 0 ) then
-     begin
-          Result := False;  Exit;
-     end;
-
      D := Pow2( B ) - C;
 
-     if D <= 0 then
+     if D > 0 then
      begin
-          Result := False;  Exit;
-     end;
+          T := -B - Roo2( D );
 
-     if C > 0 then T := -B - Roo2( D )
-              else T := -B + Roo2( D );
-
-     if T > 0.00001 then
-     begin
-          with Hit_ do
+          if T > 0.0001 then
           begin
-               Obj := Self;
-               Len := T;
-               Pos := T * Ray_.Vec + Ray_.Pos;
-               Nor := Pos.Unitor;
+               Result := TMyRayHit.Create;
 
+               with TRayHitNorTex2D( Result ) do
+               begin
+                    _Obj := Self;
+                    _Len := T;
+                    _Pos := T * Ray_.Vec + Ray_.Pos;
+                    _Nor := _Pos.Unitor;
+               end;
           end;
-
-          Result := True;
-     end
-     else Result := False;
+     end;
 end;
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& public
@@ -99,7 +100,7 @@ constructor TMyGeometry.Create;
 begin
      inherited;
 
-     _Radius := 1;
+     Radius := 1;
 end;
 
 destructor TMyGeometry.Destroy;
