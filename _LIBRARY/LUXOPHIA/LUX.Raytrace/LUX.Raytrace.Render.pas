@@ -18,17 +18,19 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
      private
        _Stop :Boolean;
      protected
-       _Pixels :TBricArray2D<TSingleRGBA>;
-       _World  :TRayWorld;
-       _Camera :TRayCamera;
+       _Pixels  :TBricArray2D<TSingleRGBA>;
+       _World   :TRayWorld;
+       _Camera  :TRayCamera;
+       _SampleN :Integer;
        ///// アクセス
      public
        constructor Create; overload;
        destructor Destroy; override;
        ///// プロパティ
-       property Pixels :TBricArray2D<TSingleRGBA> read _Pixels              ;
-       property World  :TRayWorld                 read _World  write _World ;
-       property Camera :TRayCamera                read _Camera write _Camera;
+       property Pixels  :TBricArray2D<TSingleRGBA> read _Pixels                ;
+       property World   :TRayWorld                 read _World   write _World  ;
+       property Camera  :TRayCamera                read _Camera  write _Camera ;
+       property SampleN :Integer                   read _SampleN write _SampleN;
        ///// メソッド
        procedure Run;
        procedure Stop;
@@ -43,7 +45,8 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 implementation //############################################################### ■
 
-uses System.Threading;
+uses System.Threading,
+     LUX.D1;
 
 //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【レコード】
 
@@ -63,7 +66,10 @@ constructor TRayRender.Create;
 begin
      inherited;
 
-     _Pixels := TBricArray2D<TSingleRGBA>.Create( 640, 480 );
+     _Pixels  := TBricArray2D<TSingleRGBA>.Create( 640, 480 );
+     _World   := nil;
+     _Camera  := nil;
+     _SampleN := 1;
 end;
 
 destructor TRayRender.Destroy;
@@ -82,15 +88,24 @@ begin
      TParallel.For( 0, _Pixels.BricY-1,
      procedure( Y:Integer )
      var
-        R :TRay;
-        X :Integer;
+        X, N :Integer;
+        C :TSingleRGBA;
+        A :TSingleRay3D;
      begin
           for X := 0 to _Pixels.BricX-1 do
           begin
-               R := _Camera.Shoot( ( 0.5 + X ) / _Pixels.BricX,
-                                   ( 0.5 + Y ) / _Pixels.BricY );
+               C := 0;
+               for N := 1 to _SampleN do
+               begin
+                    A := _Camera.Shoot( ( 0.5 + X + TSingle.RandomBS4 ) / _Pixels.BricX,
+                                        ( 0.5 + Y + TSingle.RandomBS4 ) / _Pixels.BricY );
 
-               _Pixels[ X, Y ] := _World.Raytrace( R );
+                    C := C + _World.Raytrace( A, 1 );
+               end;
+               C := C / _SampleN;
+               C.A := 1;
+
+               _Pixels[ X, Y ] := C;
           end;
      end );
 end;
