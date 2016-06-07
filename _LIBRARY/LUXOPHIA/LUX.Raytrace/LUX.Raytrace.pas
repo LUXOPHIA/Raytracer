@@ -9,23 +9,20 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
      TRayHit      = class;
      TRayGeometry = class;
        TRayCamera = class;
-       TRayWorld  = class;
        TRayLight  = class;
+       TRayWorld  = class;
      TRayMaterial = class;
 
      //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【レコード】
 
-     //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TRay
+     //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TRadiance
 
-     TRay = record
+     TRadiance = record
      private
      public
-       Pos :TSinglePos3D;
-       Vec :TSingleVec3D;
+       Ray :TSingleRay3D;
        Wei :TSingleRGB;
        Col :TSingleRGB;
-       ///// 演算子
-       class operator Multiply( const A_:TSingleM4; const B_:TRay ) :TRay;
      end;
 
      //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【クラス】
@@ -56,13 +53,15 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        ///// メソッド
        ///procedure UpFlagMatrix;
      protected
-       _LocalMatrix :TSingleM4;      up_LocalMatrix:Boolean;
-       _LocalMatriI :TSingleM4;      up_LocalMatriI:Boolean;
-       _WorldMatrix :TSingleM4;      up_WorldMatrix:Boolean;
-       _WorldMatriI :TSingleM4;      up_WorldMatriI:Boolean;
-       _BoundingBox :TSingleArea3D;
-       _Material    :TRayMaterial;
+       _LocalMatrix :TSingleM4    ;  up_LocalMatrix:Boolean;
+       _LocalMatriI :TSingleM4    ;  up_LocalMatriI:Boolean;
+       _WorldMatrix :TSingleM4    ;  up_WorldMatrix:Boolean;
+       _WorldMatriI :TSingleM4    ;  up_WorldMatriI:Boolean;
+       _LocalAABB   :TSingleArea3D;
+       _WorldAABB   :TSingleArea3D;  up_WorldAABB:Boolean;
+       _Material    :TRayMaterial ;
        ///// アクセス
+       function GetWorld :TRayWorld; virtual;
        function GetLocalMatrix :TSingleM4; virtual;
        procedure SetLocalMatrix( const LocalMatrix_:TSingleM4 ); virtual;
        function GetLocalMatriI :TSingleM4; virtual;
@@ -71,14 +70,14 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        procedure SetWorldMatrix( const WorldMatrix_:TSingleM4 ); virtual;
        function GetWorldMatriI :TSingleM4; virtual;
        procedure SetWorldMatriI( const WorldMatriI_:TSingleM4 ); virtual;
-       function GetBoundingBox :TSingleArea3D; virtual;
+       procedure SetLocalAABB( const LocalAABB_:TSingleArea3D );
+       function GetWorldAABB :TSingleArea3D; virtual;
        function GetMaterial :TRayMaterial; virtual;
        procedure SetMaterial( const Material_:TRayMaterial ); virtual;
-       function GetWorld :TRayWorld; virtual;
        ///// メソッド
-       function RayCast( const Ray_:TRay ) :TRayHit; virtual;
-       function RayJoin( const Pos_:TSingle3D ) :TRayHit; virtual;
-       procedure RayCastChilds( const Ray_:TRay; var Hit_:TRayHit ); virtual;
+       function _RayCast( const LocalRay_:TSingleRay3D ) :TRayHit; virtual;
+       function _RayJoin( const LocalPos_:TSingle3D ) :TRayHit; virtual;
+       procedure RayCastChilds( const WorldRay_:TSingleRay3D; var Hit_:TRayHit ); virtual;
      public
        constructor Create; override;
        destructor Destroy; override;
@@ -88,13 +87,16 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        property LocalMatriI :TSingleM4     read GetLocalMatriI write SetLocalMatriI;
        property WorldMatrix :TSingleM4     read GetWorldMatrix write SetWorldMatrix;
        property WorldMatriI :TSingleM4     read GetWorldMatriI write SetWorldMatriI;
-       property BoundingBox :TSingleArea3D read GetBoundingBox                     ;
+       property LocalAABB   :TSingleArea3D read   _LocalAABB   write SetLocalAABB  ;
+       property WorldAABB   :TSingleArea3D read GetWorldAABB                       ;
        property Material    :TRayMaterial  read GetMaterial    write SetMaterial   ;
        ///// メソッド
-       function HitBoundBox( const Ray_:TRay ) :Boolean; virtual;
-       function RayCasts( const Ray_:TRay ) :TRayHit; virtual;
-       function RayJoins( const Hit_:TRayHit ) :TRayHit; virtual;
-       function Raytrace( const Ray_:TRay ) :TSingleRGBA; virtual;
+       function HitBoundBox( const WorldRay_:TSingleRay3D ) :Boolean; virtual;
+       function RayCast( const WorldRay_:TSingleRay3D ) :TRayHit; virtual;
+       function RayCasts( const WorldRay_:TSingleRay3D ) :TRayHit; virtual;
+       function RayJoin( const WorldPos_:TSingle3D ) :TRayHit;
+       function RayJoins( const WorldPos_:TSingle3D ) :TRayHit; virtual;
+       function Raytrace( const WorldRay_:TSingleRay3D; const RayN_:Integer ) :TSingleRGB; virtual;
      end;
 
      //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TRayCamera
@@ -135,7 +137,23 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        property AngleW  :Single  read GetAngleW  write SetAngleW ;
        property AngleH  :Single  read GetAngleH  write SetAngleH ;
        ///// メソッド
-       function Shoot( const X_,Y_:Single ) :TRay;
+       function Shoot( const X_,Y_:Single ) :TSingleRay3D;
+     end;
+
+     //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TRayLight
+
+     TRayLight = class( TRayGeometry )
+     private
+     protected
+       _Color :TSingleRGB;
+       ///// メソッド
+       function _RayJoin( const LocalPos_:TSingle3D ) :TRayHit; override;
+     public
+       constructor Create; override;
+       constructor Create( const Paren_:TTreeNode ); override;
+       destructor Destroy; override;
+       ///// プロパティ
+       property Color :TSingleRGB read _Color write _Color;
      end;
 
      //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TRayWorld
@@ -143,7 +161,8 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
      TRayWorld = class( TRayGeometry )
      private
      protected
-       _Lights :TArray<TRayLight>;
+       _Lights  :TArray<TRayLight>;
+       _RecursN :Integer;
        ///// アクセス
        function GetWorld :TRayWorld; override;
        function GetLocalMatrix :TSingleM4; override;
@@ -155,33 +174,16 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        constructor Create; override;
        destructor Destroy; override;
        ///// プロパティ
-       property LocalMatrix :TSingleM4         read GetLocalMatrix;
-       property LocalMatriI :TSingleM4         read GetLocalMatriI;
-       property WorldMatrix :TSingleM4         read GetWorldMatrix;
-       property WorldMatriI :TSingleM4         read GetWorldMatriI;
-       property Lights      :TArray<TRayLight> read   _Lights     ;
-       property LightsN     :Integer           read GetLightsN    ;
+       property LocalMatrix :TSingleM4         read GetLocalMatrix           ;
+       property LocalMatriI :TSingleM4         read GetLocalMatriI           ;
+       property WorldMatrix :TSingleM4         read GetWorldMatrix           ;
+       property WorldMatriI :TSingleM4         read GetWorldMatriI           ;
+       property Lights      :TArray<TRayLight> read   _Lights                ;
+       property LightsN     :Integer           read GetLightsN               ;
+       property RecursN     :Integer           read   _RecursN write _RecursN;
        ///// メソッド
-       function HitBoundBox( const Ray_:TRay ) :Boolean; override;
-       function RayCasts( const Ray_:TRay ) :TRayHit; override;
-     end;
-
-     //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TRayLight
-
-     TRayLight = class( TRayGeometry )
-     private
-     protected
-       _Color :TSingleRGBA;
-       ///// アクセス
-       ///// メソッド
-       function RayJoin( const Pos_:TSingle3D ) :TRayHit; override;
-     public
-       constructor Create; override;
-       constructor Create( const Paren_:TTreeNode ); override;
-       destructor Destroy; override;
-       ///// プロパティ
-       property Color :TSingleRGBA read _Color write _Color;
-       ///// メソッド
+       function HitBoundBox( const WorldRay_:TSingleRay3D ) :Boolean; override;
+       function RayCasts( const WorldRay_:TSingleRay3D ) :TRayHit; override;
      end;
 
      //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TRayMaterial
@@ -198,10 +200,12 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        ///// プロパティ
        property World :TRayWorld read GetWorld;
        ///// メソッド
-       function Scatter( const Ray_:TRay; const Hit_:TRayHit ) :TSingleRGBA; virtual; abstract;
+       function Scatter( const WorldRay_:TSingleRay3D; const RayN_:Integer; const Hit_:TRayHit ) :TSingleRGB; virtual; abstract;
      end;
 
-//const //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【定数】
+const //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【定数】
+
+      _EPSILON_ = 0.001;
 
 //var //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【変数】
 
@@ -214,22 +218,11 @@ uses System.SysUtils,
 
 //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【レコード】
 
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TRay
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TRadiance
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& private
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& public
-
-class operator TRay.Multiply( const A_:TSingleM4; const B_:TRay ) :TRay;
-begin
-     with Result do
-     begin
-          Pos := A_.MultPos( B_.Pos );
-          Vec := A_.MultVec( B_.Vec );
-          Wei := B_.Wei;
-          Col := B_.Col;
-     end;
-end;
 
 //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【クラス】
 
@@ -238,6 +231,8 @@ end;
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& private
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& protected
+
+/////////////////////////////////////////////////////////////////////// アクセス
 
 function TRayHit.GetObj :TRayGeometry;
 begin
@@ -264,6 +259,53 @@ end;
 
 /////////////////////////////////////////////////////////////////////// アクセス
 
+function TRayGeometry.GetWorld :TRayWorld;
+begin
+     Result := Paren.World;
+end;
+
+//------------------------------------------------------------------------------
+
+procedure TRayGeometry.SetLocalAABB( const LocalAABB_:TSingleArea3D );
+begin
+     _LocalAABB := LocalAABB_;
+
+     up_WorldAABB := True;
+end;
+
+function TRayGeometry.GetWorldAABB :TSingleArea3D;
+var
+   I :Integer;
+begin
+     if up_WorldAABB then
+     begin
+          _WorldAABB := TSingleArea3D.MinArea;
+
+          for I := 0 to 7 do
+          begin
+               with WorldMatrix.MultPos( LocalAABB.Poin[ I ] ) do
+               begin
+                    with _WorldAABB do
+                    begin
+                         if X < Min.X then Min.X := X;
+                         if Y < Min.Y then Min.Y := Y;
+                         if Z < Min.Z then Min.Z := Z;
+
+                         if X > Max.X then Max.X := X;
+                         if Y > Max.Y then Max.Y := Y;
+                         if Z > Max.Z then Max.Z := Z;
+                    end;
+               end;
+          end;
+
+          up_WorldAABB := False;
+     end;
+
+     Result := _WorldAABB;
+end;
+
+//------------------------------------------------------------------------------
+
 function TRayGeometry.GetLocalMatrix :TSingleM4;
 begin
      if up_LocalMatrix then
@@ -280,19 +322,19 @@ procedure TRayGeometry.SetLocalMatrix( const LocalMatrix_:TSingleM4 );
 begin
      _LocalMatrix := LocalMatrix_;
 
-     up_LocalMatrix := False;
-     up_LocalMatriI := True ;
-     up_WorldMatrix := True ;
-     up_WorldMatriI := True ;
+     up_LocalMatrix := False;  up_LocalMatriI := True ;
+     up_WorldMatrix := True ;  up_WorldMatriI := True ;
+
+     up_WorldAABB := True ;
 end;
 
 function TRayGeometry.GetLocalMatriI :TSingleM4;
 begin
-     if up_WorldMatriI then
+     if up_LocalMatriI then
      begin
           _LocalMatriI := _LocalMatrix.Inverse;
 
-          up_WorldMatriI := False;
+          up_LocalMatriI := False;
      end;
 
      Result := _LocalMatriI;
@@ -302,10 +344,10 @@ procedure TRayGeometry.SetLocalMatriI( const LocalMatriI_:TSingleM4 );
 begin
      _LocalMatriI := LocalMatriI_;
 
-     up_LocalMatrix := True ;
-     up_LocalMatriI := False;
-     up_WorldMatrix := True ;
-     up_WorldMatriI := True ;
+     up_LocalMatrix := True ;  up_LocalMatriI := False;
+     up_WorldMatrix := True ;  up_WorldMatriI := True ;
+
+     up_WorldAABB := True ;
 end;
 
 //------------------------------------------------------------------------------
@@ -327,10 +369,10 @@ begin
      _WorldMatrix :=                     WorldMatrix_;
      _LocalMatrix := Paren.WorldMatriI * WorldMatrix_;
 
-     up_LocalMatrix := False;
-     up_LocalMatriI := True ;
-     up_WorldMatrix := False;
-     up_WorldMatriI := True ;
+     up_LocalMatrix := False;  up_LocalMatriI := True ;
+     up_WorldMatrix := False;  up_WorldMatriI := True ;
+
+     up_WorldAABB := True ;
 end;
 
 function TRayGeometry.GetWorldMatriI :TSingleM4;
@@ -350,36 +392,10 @@ begin
      _WorldMatriI := WorldMatriI_                    ;
      _LocalMatriI := WorldMatriI_ * Paren.WorldMatrix;
 
-     up_LocalMatrix := True ;
-     up_LocalMatriI := False;
-     up_WorldMatrix := True ;
-     up_WorldMatriI := False;
-end;
+     up_LocalMatrix := True ;  up_LocalMatriI := False;
+     up_WorldMatrix := True ;  up_WorldMatriI := False;
 
-//------------------------------------------------------------------------------
-
-function TRayGeometry.GetBoundingBox :TSingleArea3D;
-var
-   I :Integer;
-begin
-     Result := TSingleArea3D.Create( 0, 0, 0, 0, 0, 0 );
-
-     with Result do
-     begin
-          for I := 0 to 7 do
-          begin
-               with WorldMatrix.MultPos( BoundingBox.Poin[ I ] ) do
-               begin
-                    if X < Min.X then Min.X := X;
-                    if Y < Min.Y then Min.Y := Y;
-                    if Z < Min.Z then Min.Z := Z;
-
-                    if X > Max.X then Max.X := X;
-                    if Y > Max.Y then Max.Y := Y;
-                    if Z > Max.Z then Max.Z := Z;
-               end;
-          end;
-     end;
+     up_WorldAABB := True ;
 end;
 
 //------------------------------------------------------------------------------
@@ -397,39 +413,38 @@ begin
      _Material._Geometry := Self;
 end;
 
-function TRayGeometry.GetWorld :TRayWorld;
-begin
-     Result := Paren.World;
-end;
-
 /////////////////////////////////////////////////////////////////////// メソッド
 
-function TRayGeometry.RayCast( const Ray_:TRay ) :TRayHit;
+function TRayGeometry._RayCast( const LocalRay_:TSingleRay3D ) :TRayHit;
 begin
      Result := nil;
 end;
 
-function TRayGeometry.RayJoin( const Pos_:TSingle3D ) :TRayHit;
+function TRayGeometry._RayJoin( const LocalPos_:TSingle3D ) :TRayHit;
 begin
      Result := nil;
 end;
 
-procedure TRayGeometry.RayCastChilds( const Ray_:TRay; var Hit_:TRayHit );
+procedure TRayGeometry.RayCastChilds( const WorldRay_:TSingleRay3D; var Hit_:TRayHit );
 var
    I :Integer;
    H :TRayHit;
 begin
      for I := 0 to ChildsN-1 do
      begin
-          H := Childs[ I ].RayCasts( Ray_ );
+          H := Childs[ I ].RayCasts( WorldRay_ );
 
           if Assigned( Hit_ ) then
           begin
-               if Assigned( H ) and ( H.Len < Hit_.Len ) then
+               if Assigned( H ) then
                begin
-                    Hit_.Free;
+                    if H.Len < Hit_.Len then
+                    begin
+                         Hit_.Free;
 
-                    Hit_ := H;
+                         Hit_ := H;
+                    end
+                    else H.Free;
                end;
           end
           else Hit_ := H;
@@ -442,14 +457,16 @@ constructor TRayGeometry.Create;
 begin
      inherited;
 
+     _LocalAABB := TSingleArea3D.MaxArea;
+
+     _WorldAABB := _LocalAABB      ;  up_WorldAABB := False;
+
      _LocalMatrix := TSingleM4.Identify;  up_LocalMatrix := False;
      _LocalMatriI := TSingleM4.Identify;  up_LocalMatriI := False;
      _WorldMatrix := TSingleM4.Identify;  up_WorldMatrix := True ;
      _WorldMatriI := TSingleM4.Identify;  up_WorldMatriI := True ;
 
      _Material := nil;
-
-     _BoundingBox := TSingleArea3D.Create( 0, 0, 0, 0, 0, 0 );
 end;
 
 destructor TRayGeometry.Destroy;
@@ -461,88 +478,74 @@ end;
 
 /////////////////////////////////////////////////////////////////////// メソッド
 
-function TRayGeometry.HitBoundBox( const Ray_:TRay ) :Boolean;
+function TRayGeometry.HitBoundBox( const WorldRay_:TSingleRay3D ) :Boolean;
 var
-   MinT, MaxT, T0, T1 :Single;
-//･･･････････････････････････････････････････････････････････
-     procedure Slab;
+   MinT, MaxT :Single;
+//････････････････････････････････････････････････････････････････････････
+     procedure Slab( const Min_,Max_,Pos_,Vec_:Single );
+     var
+        T0, T1 :Single;
      begin
-          if T0 <= T1 then
-          begin
-               if MinT < T0 then MinT := T0;
-               if T1 < MaxT then MaxT := T1;
-          end
-          else
-          begin
-               if MinT < T1 then MinT := T1;
-               if T0 < MaxT then MaxT := T0;
-          end;
+          T0 := ( Min_ - Pos_ ) / Vec_;
+          T1 := ( Max_ - Pos_ ) / Vec_;
+
+          if MinT < T0 then MinT := T0;
+          if T1 < MaxT then MaxT := T1;
      end;
-//･･･････････････････････････････････････････････････････････
+//････････････････････････････････････････････････････････････････････････
 begin
      MinT := -Single.MaxValue;
      MaxT := +Single.MaxValue;
 
-     with Ray_ do
+     with WorldRay_, WorldAABB do
      begin
-          if Vec.X <> 0 then
-          begin
-               T0 := ( _BoundingBox.Min.X - Pos.X ) / Vec.X;
-               T1 := ( _BoundingBox.Max.X - Pos.X ) / Vec.X;
+          if Vec.X > 0 then Slab( Min.X, Max.X, Pos.X, Vec.X )
+                       else
+          if Vec.X < 0 then Slab( Max.X, Min.X, Pos.X, Vec.X );
 
-               Slab;
-          end;
+          if Vec.Y > 0 then Slab( Min.Y, Max.Y, Pos.Y, Vec.Y )
+                       else
+          if Vec.Y < 0 then Slab( Max.Y, Min.Y, Pos.Y, Vec.Y );
 
-          if Vec.Y <> 0 then
-          begin
-               T0 := ( _BoundingBox.Min.Y - Pos.Y ) / Vec.Y;
-               T1 := ( _BoundingBox.Max.Y - Pos.Y ) / Vec.Y;
-
-               Slab;
-          end;
-
-          if Vec.Z <> 0 then
-          begin
-               T0 := ( _BoundingBox.Min.Z - Pos.Z ) / Vec.Z;
-               T1 := ( _BoundingBox.Max.Z - Pos.Z ) / Vec.Z;
-
-               Slab;
-          end;
+          if Vec.Z > 0 then Slab( Min.Z, Max.Z, Pos.Z, Vec.Z )
+                       else
+          if Vec.Z < 0 then Slab( Max.Z, Min.Z, Pos.Z, Vec.Z );
      end;
 
      Result := ( MinT <= MaxT );
 end;
 
-function TRayGeometry.RayCasts( const Ray_:TRay ) :TRayHit;
-var
-   Ray :TRay;
+function TRayGeometry.RayCast( const WorldRay_:TSingleRay3D ) :TRayHit;
 begin
-     Ray := WorldMatriI * Ray_;
-
-     if HitBoundBox( Ray ) then Result := RayCast( Ray )
-                           else Result := nil;
-
-     RayCastChilds( Ray_, Result );
+     if HitBoundBox( WorldRay_ ) then Result := _RayCast( TSingleRay3D( WorldMatriI * WorldRay_ ).Unitor )
+                                 else Result := nil;
 end;
 
-function TRayGeometry.RayJoins( const Hit_:TRayHit ) :TRayHit;
+function TRayGeometry.RayCasts( const WorldRay_:TSingleRay3D ) :TRayHit;
+begin
+     Result := RayCast( WorldRay_ );
+
+     RayCastChilds( WorldRay_, Result );
+end;
+
+function TRayGeometry.RayJoin( const WorldPos_:TSingle3D ) :TRayHit;
+begin
+     Result := _RayJoin( WorldMatriI.MultPos( WorldPos_ ) );
+end;
+
+function TRayGeometry.RayJoins( const WorldPos_:TSingle3D ) :TRayHit;
 var
-   P :TSingle3D;
-   R :TRay;
+   A :TSingleRay3D;
    H :TRayHit;
 begin
-     P := WorldMatriI.MultPos( Hit_.Pos );
-
-     Result := RayJoin( P );
+     Result := RayJoin( WorldPos_ );
 
      if Assigned( Result ) then
      begin
-          P := Hit_.Pos;
+          A.Pos := WorldPos_;
+          A.Vec := WorldPos_.UnitorTo( Result.Pos );
 
-          R.Pos := P;
-          R.Vec := P.UnitorTo( Result.Pos );
-
-          H := World.RayCasts( R );
+          H := World.RayCasts( A );
 
           if Assigned( H ) then
           begin
@@ -558,19 +561,23 @@ begin
      end;
 end;
 
-function TRayGeometry.Raytrace( const Ray_:TRay ) :TSingleRGBA;
+function TRayGeometry.Raytrace( const WorldRay_:TSingleRay3D; const RayN_:Integer ) :TSingleRGB;
 var
    H :TRayHit;
 begin
-     H := RayCasts( Ray_ );
-
-     if Assigned( H ) then
+     if RayN_ <= World.RecursN then
      begin
-          Result := H.Obj.Material.Scatter( Ray_, H );
+          H := RayCasts( WorldRay_ );
 
-          H.Free;
+          if Assigned( H ) then
+          begin
+               Result := H.Obj.Material.Scatter( WorldRay_, RayN_ + 1, H );
+
+               H.Free;
+          end
+          else Result := TSingleRGB.Create( 0, 0, 0 );
      end
-     else Result := TSingleRGBA.Create( 0, 0, 0, 0 );
+     else Result := TSingleRGB.Create( 0, 0, 0 );
 end;
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TRayCamera
@@ -663,17 +670,62 @@ end;
 
 /////////////////////////////////////////////////////////////////////// メソッド
 
-function TRayCamera.Shoot( const X_,Y_:Single ) :TRay;
+function TRayCamera.Shoot( const X_,Y_:Single ) :TSingleRay3D;
 begin
-     Result.Pos := TSingle3D.Create( 0, 0, 0 );
-     Result.Vec := TSingle3D.Create( -_ScreenW/2, +_ScreenH/2, -_ScreenZ );
+     with Result do
+     begin
+          Pos := TSingle3D.Create( 0, 0, 0 );
 
-     with Result.Vec do X := X + _ScreenW * X_;
-     with Result.Vec do Y := Y - _ScreenH * Y_;
+          with Vec do
+          begin
+               X := -_ScreenW/2 + _ScreenW * X_;
+               Y := +_ScreenH/2 - _ScreenH * Y_;
+               Z := -_ScreenZ                  ;
+          end;
+     end;
 
-     with Result do Vec := Vec.Unitor;
+     Result := TSingleRay3D( WorldMatrix * Result ).Unitor;
+end;
 
-     Result := WorldMatrix * Result;
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TRayLight
+
+//&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& private
+
+//&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& protected
+
+/////////////////////////////////////////////////////////////////////// メソッド
+
+function TRayLight._RayJoin( const LocalPos_:TSingle3D ) :TRayHit;
+begin
+     Result := TRayHit.Create;
+
+     with Result do
+     begin
+          _Obj := Self;
+          _Pos := TSingle3D.Create( 0, 0, 0 );
+          _Len := Distance( LocalPos_, _Pos );
+     end;
+end;
+
+//&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& public
+
+constructor TRayLight.Create;
+begin
+     inherited;
+
+end;
+
+constructor TRayLight.Create( const Paren_:TTreeNode );
+begin
+     inherited;
+
+     World._Lights := World._Lights + [ Self ];
+end;
+
+destructor TRayLight.Destroy;
+begin
+
+     inherited;
 end;
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TRayWorld
@@ -726,6 +778,7 @@ begin
 
      _Material := TMaterialRGB.Create;
      _Lights   := [];
+     _RecursN  := 8;
 end;
 
 destructor TRayWorld.Destroy;
@@ -736,57 +789,16 @@ end;
 
 /////////////////////////////////////////////////////////////////////// メソッド
 
-function TRayWorld.HitBoundBox( const Ray_:TRay ) :Boolean;
+function TRayWorld.HitBoundBox( const WorldRay_:TSingleRay3D ) :Boolean;
 begin
      Result := False;
 end;
 
-function TRayWorld.RayCasts( const Ray_:TRay ) :TRayHit;
+function TRayWorld.RayCasts( const WorldRay_:TSingleRay3D ) :TRayHit;
 begin
      Result := nil;
 
-     RayCastChilds( Ray_, Result );
-end;
-
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TRayLight
-
-//&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& private
-
-//&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& protected
-
-/////////////////////////////////////////////////////////////////////// メソッド
-
-function TRayLight.RayJoin( const Pos_:TSingle3D ) :TRayHit;
-begin
-     Result := TRayHit.Create;
-
-     with Result do
-     begin
-          _Obj := Self;
-          _Pos := TSingle3D.Create( 0, 0, 0 );
-          _Len := Distance( Pos_, _Pos );
-     end;
-end;
-
-//&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& public
-
-constructor TRayLight.Create;
-begin
-     inherited;
-
-end;
-
-constructor TRayLight.Create( const Paren_:TTreeNode );
-begin
-     inherited;
-
-     World._Lights := World._Lights + [ Self ];
-end;
-
-destructor TRayLight.Destroy;
-begin
-
-     inherited;
+     RayCastChilds( WorldRay_, Result );
 end;
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TMaterial

@@ -17,9 +17,13 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
      TMyMaterial = class( TRayMaterial )
      private
      protected
+       _DiffRatio :TSingleRGB;
      public
+       constructor Create;
+       ///// プロパティ
+       property DiffRatio :TSingleRGB read _DiffRatio write _DiffRatio;
        ///// メソッド
-       function Scatter( const Ray_:TRay; const Hit_:TRayHit ) :TSingleRGBA; override;
+       function Scatter( const WorldRay_:TSingleRay3D; const RayN_:Integer; const Hit_:TRayHit ) :TSingleRGB; override;
      end;
 
 //const //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【定数】
@@ -34,7 +38,7 @@ implementation //###############################################################
 
 //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【クラス】
 
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TMaterialDiff
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TMyMaterial
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& private
 
@@ -42,37 +46,62 @@ implementation //###############################################################
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& public
 
-function TMyMaterial.Scatter( const Ray_:TRay; const Hit_:TRayHit ) :TSingleRGBA;
+constructor TMyMaterial.Create;
+begin
+     inherited;
+
+     _DiffRatio := TSingleRGB.Create( 1, 1, 1 );
+end;
+
+/////////////////////////////////////////////////////////////////////// メソッド
+
+function TMyMaterial.Scatter( const WorldRay_:TSingleRay3D; const RayN_:Integer; const Hit_:TRayHit ) :TSingleRGB;
 var
    Hit :TRayHitNor;
-   I :Integer;
    L :TRayLight;
-   H :TRayHit;
-   V :TSingle3D;
-   D :Single;
+   A :TSingleRay3D;
+//･･････････････････････････････････････････････････････････････････････････････
+     procedure Diff;
+     var
+        D :Single;
+     begin
+          D := DotProduct( Hit.Nor, A.Vec );  if D < 0 then D := 0;
+
+          Result := Result + D * L.Color * _DiffRatio;
+     end;
+//･･････････････････････････････････････････････････････････････････････････････
+var
+   I :Integer;
+   H, S :TRayHit;
 begin
      Hit := TRayHitNor( Hit_ );
 
-     Result := 0;
+     Result := TSingleRGB.Create( 0, 0, 0 );
 
      for I := 0 to World.LightsN-1 do
      begin
           L := World.Lights[ I ];
-          H := L.RayJoins( Hit_ );
 
-          if Assigned( H ) then
+          H := L.RayJoin( Hit_.Pos );
+
+          with A do
           begin
-               V := Hit_.Pos.UnitorTo( H.Pos );
-               D := DotProduct( Hit.Nor, V );
-               if D < 0 then D := 0;
-
-               Result := Result + D * L.Color;
-
-               H.Free;
+               Pos := Hit.Pos;
+               Vec := Hit.Pos.UnitorTo( H.Pos );
           end;
-     end;
 
-     Result.A := 1;
+          S := World.RayCasts( A );
+
+          if Assigned( S ) then
+          begin
+               if S.Len >= H.Len then Diff;
+
+               S.Free;
+          end
+          else Diff;
+
+          H.Free;
+     end;
 end;
 
 //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【ルーチン】

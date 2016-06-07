@@ -16,19 +16,19 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
      TMyGeometry = class( TRayGeometry )
      private
+       ///// メソッド
+       procedure MakeLocalAABB;
      protected
        _Radius :Single;
        ///// アクセス
        procedure SetRadius( const Radius_:Single );
        ///// メソッド
-       procedure SetBoundingBox;
-       function RayCast( const Ray_:TRay ) :TRayHit; override;
+       function _RayCast( const LocalRay_:TSingleRay3D ) :TRayHit; override;
      public
        constructor Create; override;
        destructor Destroy; override;
        ///// プロパティ
        property Radius :Single read _Radius write SetRadius;
-       ///// メソッド
      end;
 
 //const //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【定数】
@@ -38,6 +38,8 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【ルーチン】
 
 implementation //############################################################### ■
+
+uses System.SysUtils, System.Math;
 
 //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【レコード】
 
@@ -49,45 +51,56 @@ implementation //###############################################################
 
 /////////////////////////////////////////////////////////////////////// アクセス
 
-procedure TMyGeometry.SetRadius( const Radius_:Single );
+procedure TMyGeometry.MakeLocalAABB;
 begin
-     _Radius := Radius_;  SetBoundingBox;
+     LocalAABB := TSingleArea3D.Create( -_Radius, -_Radius, -_Radius,
+                                        +_Radius, +_Radius, +_Radius );
 end;
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& protected
 
-/////////////////////////////////////////////////////////////////////// メソッド
+/////////////////////////////////////////////////////////////////////// アクセス
 
-procedure TMyGeometry.SetBoundingBox;
+procedure TMyGeometry.SetRadius( const Radius_:Single );
 begin
-     _BoundingBox := TSingleArea3D.Create( -_Radius, -_Radius, -_Radius,
-                                           +_Radius, +_Radius, +_Radius );
+     _Radius := Radius_;  MakeLocalAABB;
 end;
 
-function TMyGeometry.RayCast( const Ray_:TRay ) :TRayHit;
-var
-   B, C, D, T :Single;
-begin
-     Result := inherited;
+/////////////////////////////////////////////////////////////////////// メソッド
 
-     B := DotProduct( Ray_.Pos, Ray_.Vec );
-     C := Ray_.Pos.Siz2 - Pow2( _Radius );
+function TMyGeometry._RayCast( const LocalRay_:TSingleRay3D ) :TRayHit;
+var
+   B, C, D, D2, T0, T1 :Single;
+begin
+     Result := nil;
+
+     with LocalRay_ do
+     begin
+          B := DotProduct( Pos, Vec );
+          C := Pos.Siz2 - Pow2( _Radius );
+     end;
 
      D := Pow2( B ) - C;
 
      if D > 0 then
      begin
-          T := -B - Roo2( D );
+          D2 := Roo2( D );
 
-          if T > 0.0001 then
+          T0 := -B - D2;
+          T1 := -B + D2;
+
+          if T1 > _EPSILON_ then
           begin
                Result := TMyRayHit.Create;
 
-               with TRayHitNorTex2D( Result ) do
+               with TMyRayHit( Result ) do
                begin
                     _Obj := Self;
-                    _Len := T;
-                    _Pos := T * Ray_.Vec + Ray_.Pos;
+
+                    if T0 > _EPSILON_ then _Len := T0
+                                      else _Len := T1;
+
+                    _Pos := LocalRay_.GoPos( _Len );
                     _Nor := _Pos.Unitor;
                end;
           end;

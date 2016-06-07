@@ -32,6 +32,7 @@ type
     { public 宣言 }
     _Render :TRayRender;
     _World  :TRayWorld;
+    _Sky    :TRaySky;
     _Camera :TRayCamera;
     _LightR :TRayLight;
     _LightG :TRayLight;
@@ -63,10 +64,6 @@ begin
      ////////// 世界
 
      _World := TRayWorld.Create;
-     with _World do
-     begin
-          Material := TMyMaterial.Create;
-     end;
 
      _Render.World := _World;
 
@@ -110,6 +107,21 @@ begin
      with _Ground do
      begin
           LocalMatrix := TSingleM4.Translate( 0, -5, 0 );
+
+          Material := TMaterialDiff.Create;
+     end;
+
+     ////////// 空
+
+     _Sky := TRaySky.Create( _World );
+     with _Sky do
+     begin
+          Material := TMaterialTexColor.Create;
+
+          with TMaterialTexColor( Material ) do
+          begin
+               Texture.LoadFromFile( '..\..\_DATA\Sky.png' );
+          end;
      end;
 
      ////////// 球
@@ -118,11 +130,17 @@ begin
      begin
           with TMyGeometry.Create( _World ) do
           begin
-               Radius := Random;
+               Radius := 1;
 
                LocalMatrix := TSingleM4.Translate( 10 * Random - 5,
                                                    10 * Random - 5,
-                                                   10 * Random - 5 );
+                                                   10 * Random - 5 )
+                            * TSingleM4.RotateZ( DegToRad( Random * 360 ) )
+                            * TSingleM4.Scale( 0.25 + 0.75 * Random,
+                                               0.25 + 0.75 * Random,
+                                               0.25 + 0.75 * Random );
+
+               Material := TMyMaterial.Create;
           end;
      end;
 end;
@@ -159,6 +177,8 @@ begin
 
           CopyToBitmap( Image1.Bitmap );
      end;
+
+     Image1.Bitmap.SaveToFile( 'Image.png' );
 
      ButtonP.Enabled := True ;
      ButtonS.Enabled := False;

@@ -27,7 +27,9 @@ uses
   LIB.Raytrace.Geometry in '_LIBRARY\LIB.Raytrace.Geometry.pas',
   LUX.Raytrace.Hit in '_LIBRARY\LUXOPHIA\LUX.Raytrace\LUX.Raytrace.Hit.pas',
   LIB.Raytrace.Material in '_LIBRARY\LIB.Raytrace.Material.pas',
-  LIB.Raytrace in '_LIBRARY\LIB.Raytrace.pas';
+  LIB.Raytrace in '_LIBRARY\LIB.Raytrace.pas',
+  LUX.Color.Map.D2 in '_LIBRARY\LUXOPHIA\LUX.Color\LUX.Color.Map.D2.pas',
+  LUX.Color.Map.D1 in '_LIBRARY\LUXOPHIA\LUX.Color\LUX.Color.Map.D1.pas';
 
 {$R *.res}
 

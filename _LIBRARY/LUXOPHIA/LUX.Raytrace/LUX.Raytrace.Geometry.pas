@@ -6,6 +6,7 @@ uses LUX, LUX.D3, LUX.Graph.Tree, LUX.Raytrace, LUX.Raytrace.Hit;
 
 type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【型】
 
+     TRayGround = class;
      TRaySphere = class;
 
      //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【レコード】
@@ -18,10 +19,18 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
      private
      protected
        ///// メソッド
-       function RayCast( const Ray_:TRay ) :TRayHit; override;
+       function _RayCast( const LocalRay_:TSingleRay3D ) :TRayHit; override;
      public
+     end;
+
+     //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TRaySky
+
+     TRaySky = class( TRayGeometry )
+     private
+     protected
        ///// メソッド
-       function HitBoundBox( const Ray_:TRay ) :Boolean; override;
+       function _RayCast( const LocalRay_:TSingleRay3D ) :TRayHit; override;
+     public
      end;
 
      //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TRaySphere
@@ -33,13 +42,11 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        ///// アクセス
        procedure SetRadius( const Radius_:Single );
        ///// メソッド
-       function RayCast( const Ray_:TRay ) :TRayHit; override;
+       function _RayCast( const LocalRay_:TSingleRay3D ) :TRayHit; override;
      public
        constructor Create; override;
        ///// プロパティ
        property Radius :Single read _Radius write SetRadius;
-       ///// メソッド
-       function HitBoundBox( const Ray_:TRay ) :Boolean; override;
      end;
 
 //const //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【定数】
@@ -49,6 +56,8 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【ルーチン】
 
 implementation //############################################################### ■
+
+uses System.SysUtils, System.Math;
 
 //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【レコード】
 
@@ -62,20 +71,17 @@ implementation //###############################################################
 
 /////////////////////////////////////////////////////////////////////// メソッド
 
-function TRayGround.RayCast( const Ray_:TRay ) :TRayHit;
+function TRayGround._RayCast( const LocalRay_:TSingleRay3D ) :TRayHit;
 var
-   V, P, T :Single;
+   T :Single;
 begin
      Result := inherited;
 
-     P := ( Ray_.Pos.Y );
-     V := ( Ray_.Vec.Y );
-
-     if ( P > 0 ) and ( V < 0 ) then
+     if ( LocalRay_.Pos.Y > 0 ) and ( LocalRay_.Vec.Y < 0 ) then
      begin
-          T := P / -V;
+          T := LocalRay_.Pos.Y / -LocalRay_.Vec.Y;
 
-          if T > 0.001 then
+          if T > _EPSILON_ then
           begin
                Result := TRayHitNorTex2D.Create;
 
@@ -83,7 +89,7 @@ begin
                begin
                     _Obj := Self;
                     _Len := T;
-                    _Pos := T * Ray_.Vec + Ray_.Pos;
+                    _Pos := LocalRay_.GoPos( _Len );
                     _Nor := TSingle3D.Create( 0, 1, 0 );
                end;
           end;
@@ -92,12 +98,31 @@ end;
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& public
 
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TRaySky
+
+//&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& private
+
+//&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& protected
+
 /////////////////////////////////////////////////////////////////////// メソッド
 
-function TRayGround.HitBoundBox( const Ray_:TRay ) :Boolean;
+function TRaySky._RayCast( const LocalRay_:TSingleRay3D ) :TRayHit;
 begin
-     Result := True;
+     Result := TRayHitNorTex2D.Create;
+
+     with TRayHitNorTex2D( Result ) do
+     begin
+          _Obj := Self;
+          _Len := Single.MaxValue;
+          _Pos := LocalRay_.GoPos( _Len );
+          _Nor := -LocalRay_.Vec;
+
+          _Tex2D.X := ( Pi + ArcTan2( +LocalRay_.Vec.Z, -LocalRay_.Vec.X ) ) / Pi2;
+          _Tex2D.Y := ArcCos( LocalRay_.Vec.Y ) / Pi;
+     end;
 end;
+
+//&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& public
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TRaySphere
 
@@ -109,38 +134,46 @@ procedure TRaySphere.SetRadius( const Radius_:Single );
 begin
      _Radius := Radius_;
 
-     _BoundingBox := TSingleArea3D.Create( -Radius_, -Radius_, -Radius_,
-                                           +Radius_, +Radius_, +Radius_ );
+     LocalAABB := TSingleArea3D.Create( -Radius_, +Radius_ );
 end;
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& protected
 
 /////////////////////////////////////////////////////////////////////// メソッド
 
-function TRaySphere.RayCast( const Ray_:TRay ) :TRayHit;
+function TRaySphere._RayCast( const LocalRay_:TSingleRay3D ) :TRayHit;
 var
-   B, C, D, T :Single;
+   B, C, D, D2, T0, T1 :Single;
 begin
-     Result := inherited;
+     Result := nil;
 
-     B := DotProduct( Ray_.Pos, Ray_.Vec );
-     C := Ray_.Pos.Siz2 - Pow2( _Radius );
+     with LocalRay_ do
+     begin
+          B := DotProduct( Pos, Vec );
+          C := Pos.Siz2 - Pow2( _Radius );
+     end;
 
      D := Pow2( B ) - C;
 
      if D > 0 then
      begin
-          T := -B - Roo2( D );
+          D2 := Roo2( D );
 
-          if T > 0.001 then
+          T0 := -B - D2;
+          T1 := -B + D2;
+
+          if T1 > _EPSILON_ then
           begin
-               Result := TRayHitNorTex2D.Create;
+               Result := TRayHit.Create;
 
-               with TRayHitNorTex2D( Result ) do
+               with TRayHitNor( Result ) do
                begin
                     _Obj := Self;
-                    _Len := T;
-                    _Pos := T * Ray_.Vec + Ray_.Pos;
+
+                    if T0 > _EPSILON_ then _Len := T0
+                                      else _Len := T1;
+
+                    _Pos := LocalRay_.GoPos( _Len );
                     _Nor := _Pos.Unitor;
                end;
           end;
@@ -154,13 +187,6 @@ begin
      inherited;
 
      _Radius := 1;
-end;
-
-/////////////////////////////////////////////////////////////////////// メソッド
-
-function TRaySphere.HitBoundBox( const Ray_:TRay ) :Boolean;
-begin
-     Result := True;
 end;
 
 //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【ルーチン】
