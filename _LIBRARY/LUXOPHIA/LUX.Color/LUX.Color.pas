@@ -66,6 +66,9 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
      TSingleRGB = packed record
      private
+       ///// アクセス
+       function GetSiz2 :Single;
+       function GetSize :Single;
      public
        R :Single;
        G :Single;
@@ -73,6 +76,8 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        /////
        constructor Create( const R_,G_,B_:Single );
        ///// プロパティ
+       property Siz2 :Single read GetSiz2;
+       property Size :Single read GetSize;
        ///// 演算子
        class operator Negative( const V_:TSingleRGB ) :TSingleRGB;
        class operator Positive( const V_:TSingleRGB ) :TSingleRGB;
@@ -83,6 +88,7 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        class operator Multiply( const A_:TSingleRGB; const B_:Single ): TSingleRGB;
        class operator Divide( const A_:TSingleRGB; const B_:Single ): TSingleRGB;
        ///// 型変換
+       class operator Implicit( const C_:Single ) :TSingleRGB;
        class operator Implicit( const C_:TByteRGB ) :TSingleRGB;
        class operator Implicit( const C_:TSingleRGB ) :TByteRGB;
      end;
@@ -91,6 +97,9 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
      TSingleRGBA = packed record
      private
+       ///// アクセス
+       function GetSiz2 :Single;
+       function GetSize :Single;
      public
        R :Single;
        G :Single;
@@ -99,6 +108,8 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        /////
        constructor Create( const R_,G_,B_:Single; const A_:Single = 1 );
        ///// プロパティ
+       property Siz2 :Single read GetSiz2;
+       property Size :Single read GetSize;
        ///// 演算子
        class operator Negative( const V_:TSingleRGBA ) :TSingleRGBA;
        class operator Positive( const V_:TSingleRGBA ) :TSingleRGBA;
@@ -109,6 +120,7 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        class operator Multiply( const A_:TSingleRGBA; const B_:Single ): TSingleRGBA;
        class operator Divide( const A_:TSingleRGBA; const B_:Single ): TSingleRGBA;
        ///// 型変換
+       class operator Implicit( const C_:Single ) :TSingleRGBA;
        class operator Implicit( const C_:TAlphaColor ) :TSingleRGBA;
        class operator Implicit( const C_:TSingleRGBA ) :TAlphaColor;
        class operator Implicit( const C_:TByteRGBA ) :TSingleRGBA;
@@ -124,6 +136,15 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 //var //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【変数】
 
 //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【ルーチン】
+
+function Ave( const C1_,C2_:TSingleRGB ) :TSingleRGB; overload;
+function Ave( const C1_,C2_:TSingleRGBA ) :TSingleRGBA; overload;
+
+function Distanc2( const C1_,C2_:TSingleRGB ) :Single; overload;
+function Distanc2( const C1_,C2_:TSingleRGBA ) :Single; overload;
+
+function Distance( const C1_,C2_:TSingleRGB ) :Single; overload;
+function Distance( const C1_,C2_:TSingleRGBA ) :Single; overload;
 
 implementation //############################################################### ■
 
@@ -210,6 +231,18 @@ end;
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TSingleRGB
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& private
+
+/////////////////////////////////////////////////////////////////////// アクセス
+
+function TSingleRGB.GetSiz2 :Single;
+begin
+     Result := Pow2( R ) + Pow2( G ) + Pow2( B );
+end;
+
+function TSingleRGB.GetSize :Single;
+begin
+     Result := Roo2( GetSiz2 );
+end;
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& public
 
@@ -304,6 +337,16 @@ end;
 
 ///////////////////////////////////////////////////////////////////////// 型変換
 
+class operator TSingleRGB.Implicit( const C_:Single ) :TSingleRGB;
+begin
+     with Result do
+     begin
+          R := C_;
+          G := C_;
+          B := C_;
+     end;
+end;
+
 class operator TSingleRGB.Implicit( const C_:TByteRGB ) :TSingleRGB;
 begin
      with Result do
@@ -327,6 +370,18 @@ end;
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TSingleRGBA
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& private
+
+/////////////////////////////////////////////////////////////////////// アクセス
+
+function TSingleRGBA.GetSiz2 :Single;
+begin
+     Result := Pow2( R ) + Pow2( G ) + Pow2( B ) + Pow2( A );
+end;
+
+function TSingleRGBA.GetSize :Single;
+begin
+     Result := Roo2( GetSiz2 );
+end;
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& public
 
@@ -430,6 +485,17 @@ end;
 
 ///////////////////////////////////////////////////////////////////////// 型変換
 
+class operator TSingleRGBA.Implicit( const C_:Single ) :TSingleRGBA;
+begin
+     with Result do
+     begin
+          R := C_;
+          G := C_;
+          B := C_;
+          A := 1;
+     end;
+end;
+
 class operator TSingleRGBA.Implicit( const C_:TAlphaColor ) :TSingleRGBA;
 begin
      Result := TByteRGBA( C_ );
@@ -486,6 +552,42 @@ end;
 //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【クラス】
 
 //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【ルーチン】
+
+function Ave( const C1_,C2_:TSingleRGB ) :TSingleRGB;
+begin
+     Result := ( C1_ + C2_ ) / 2;
+end;
+
+function Ave( const C1_,C2_:TSingleRGBA ) :TSingleRGBA;
+begin
+     Result := ( C1_ + C2_ ) / 2;
+end;
+
+//------------------------------------------------------------------------------
+
+function Distanc2( const C1_,C2_:TSingleRGB ) :Single;
+begin
+     Result := Pow2( C2_.R - C1_.R )
+             + Pow2( C2_.G - C1_.G )
+             + Pow2( C2_.B - C1_.B );
+end;
+
+function Distanc2( const C1_,C2_:TSingleRGBA ) :Single;
+begin
+     Result := Pow2( C2_.R - C1_.R )
+             + Pow2( C2_.G - C1_.G )
+             + Pow2( C2_.B - C1_.B );
+end;
+
+function Distance( const C1_,C2_:TSingleRGB ) :Single;
+begin
+     Result := Roo2( Distanc2( C1_, C2_ ) );
+end;
+
+function Distance( const C1_,C2_:TSingleRGBA ) :Single;
+begin
+     Result := Roo2( Distanc2( C1_, C2_ ) );
+end;
 
 //############################################################################## □
 
