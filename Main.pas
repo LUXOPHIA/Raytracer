@@ -6,7 +6,7 @@ uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs,
   FMX.StdCtrls, FMX.Controls.Presentation, FMX.Objects, FMX.Edit,
-  LUX.Matrix.L4, LUX.Color,
+  LUX, LUX.Matrix.L4, LUX.Color,
   LUX.Raytrace, LUX.Raytrace.Geometry, LUX.Raytrace.Material, LUX.Raytrace.Render,
   LIB.Raytrace, LIB.Raytrace.Geometry, LIB.Raytrace.Material;
 
@@ -34,9 +34,7 @@ type
     _World  :TRayWorld;
     _Sky    :TRaySky;
     _Camera :TRayCamera;
-    _LightR :TRayLight;
-    _LightG :TRayLight;
-    _LightB :TRayLight;
+    _Light  :TRayLight;
     _Ground :TRayGround;
     ///// メソッド
     procedure MakeScene;
@@ -80,25 +78,12 @@ begin
 
      ////////// ライト
 
-     _LightR := TRayLight.Create( _World );
-     with _LightR do
+     _Light := TRayLight.Create( _World );
+     with _Light do
      begin
-          LocalMatrix := TSingleM4.Translate( 0, 100, 50 );
-          Color       := TSingleRGBA.Create( 1, 0, 0 );
-     end;
+          LocalMatrix := TSingleM4.Translate( 0, 100, 0 );
 
-     _LightG := TRayLight.Create( _World );
-     with _LightG do
-     begin
-          LocalMatrix := TSingleM4.Translate( -50, 100, 0 );
-          Color       := TSingleRGBA.Create( 0, 1, 0 );
-     end;
-
-     _LightB := TRayLight.Create( _World );
-     with _LightB do
-     begin
-          LocalMatrix := TSingleM4.Translate( +50, 100, 0 );
-          Color       := TSingleRGBA.Create( 0, 0, 1 );
+          Color       := TSingleRGBA.Create( 1, 1, 1 );
      end;
 
      ////////// 地面
@@ -106,9 +91,14 @@ begin
      _Ground := TRayGround.Create( _World );
      with _Ground do
      begin
-          LocalMatrix := TSingleM4.Translate( 0, -5, 0 );
+          LocalMatrix := TSingleM4.Translate( 0, -6, 0 );
 
           Material := TMaterialDiff.Create;
+
+          with TMaterialDiff( Material ) do
+          begin
+               DiffRatio := TSingleRGB.Create( 1, 1, 1 );
+          end;
      end;
 
      ////////// 空
@@ -135,12 +125,21 @@ begin
                LocalMatrix := TSingleM4.Translate( 10 * Random - 5,
                                                    10 * Random - 5,
                                                    10 * Random - 5 )
-                            * TSingleM4.RotateZ( DegToRad( Random * 360 ) )
-                            * TSingleM4.Scale( 0.25 + 0.75 * Random,
-                                               0.25 + 0.75 * Random,
-                                               0.25 + 0.75 * Random );
+                            * TSingleM4.RotateX( Pi2 * Random )
+                            * TSingleM4.RotateY( Pi2 * Random )
+                            * TSingleM4.RotateZ( Pi2 * Random )
+                            * TSingleM4.Scale( 0.2 + 0.8 * Random,
+                                               0.2 + 0.8 * Random,
+                                               0.2 + 0.8 * Random );
 
                Material := TMyMaterial.Create;
+
+               with TMyMaterial( Material ) do
+               begin
+                    DiffRatio := TSingleRGB.Create( 0.2 + 0.8 * Random,
+                                                    0.2 + 0.8 * Random,
+                                                    0.2 + 0.8 * Random );
+               end;
           end;
      end;
 end;
@@ -150,6 +149,13 @@ end;
 procedure TForm1.FormCreate(Sender: TObject);
 begin
      _Render := TRayRender.Create;
+
+     with _Render do
+     begin
+          MaxSampleN := 64;
+          ConvN      := 4;
+          ConvE      := 1/32;
+     end;
 
      MakeScene;
 end;

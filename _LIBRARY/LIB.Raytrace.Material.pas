@@ -3,7 +3,7 @@
 interface //#################################################################### ■
 
 uses LUX, LUX.D3, LUX.Matrix.L4, LUX.Color,
-     LUX.Raytrace, LUX.Raytrace.Hit, LUX.Raytrace.Material,
+     LUX.Raytrace, LUX.Raytrace.Material,
      LIB.Raytrace;
 
 type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【型】
@@ -57,7 +57,6 @@ end;
 
 function TMyMaterial.Scatter( const WorldRay_:TSingleRay3D; const RayN_:Integer; const Hit_:TRayHit ) :TSingleRGB;
 var
-   Hit :TRayHitNor;
    L :TRayLight;
    A :TSingleRay3D;
 //･･････････････････････････････････････････････････････････････････････････････
@@ -65,7 +64,7 @@ var
      var
         D :Single;
      begin
-          D := DotProduct( Hit.Nor, A.Vec );  if D < 0 then D := 0;
+          D := DotProduct( Hit_.Nor, A.Vec );  if D < 0 then D := 0;
 
           Result := Result + D * L.Color * _DiffRatio;
      end;
@@ -74,8 +73,6 @@ var
    I :Integer;
    H, S :TRayHit;
 begin
-     Hit := TRayHitNor( Hit_ );
-
      Result := TSingleRGB.Create( 0, 0, 0 );
 
      for I := 0 to World.LightsN-1 do
@@ -86,21 +83,17 @@ begin
 
           with A do
           begin
-               Pos := Hit.Pos;
-               Vec := Hit.Pos.UnitorTo( H.Pos );
+               Pos := Hit_.Pos;
+               Vec := Hit_.Pos.UnitorTo( H.Pos );
           end;
 
           S := World.RayCasts( A );
 
-          if Assigned( S ) then
+          if Assigned( S.Obj ) then
           begin
                if S.Len >= H.Len then Diff;
-
-               S.Free;
           end
           else Diff;
-
-          H.Free;
      end;
 end;
 

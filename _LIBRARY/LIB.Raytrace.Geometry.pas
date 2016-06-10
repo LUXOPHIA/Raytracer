@@ -3,7 +3,7 @@
 interface //#################################################################### ■
 
 uses LUX, LUX.D3, LUX.Matrix.L4,
-     LUX.Raytrace, LUX.Raytrace.Hit, LUX.Raytrace.Geometry,
+     LUX.Raytrace, LUX.Raytrace.Geometry,
      LIB.Raytrace;
 
 type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【型】
@@ -70,30 +70,30 @@ end;
 
 function TMyGeometry._RayCast( const LocalRay_:TSingleRay3D ) :TRayHit;
 var
-   B, C, D, D2, T0, T1 :Single;
+   A, B, C, D, D2, T0, T1 :Single;
 begin
-     Result := nil;
+     Result._Obj := nil;
 
      with LocalRay_ do
      begin
+          A := Vec.Siz2;
           B := DotProduct( Pos, Vec );
           C := Pos.Siz2 - Pow2( _Radius );
      end;
 
-     D := Pow2( B ) - C;
+     D := Pow2( B ) - A * C;
 
      if D > 0 then
      begin
           D2 := Roo2( D );
 
-          T0 := -B - D2;
-          T1 := -B + D2;
+          T1 := ( -B + D2 ) / A;
 
           if T1 > _EPSILON_ then
           begin
-               Result := TMyRayHit.Create;
+               T0 := ( -B - D2 ) / A;
 
-               with TMyRayHit( Result ) do
+               with Result do
                begin
                     _Obj := Self;
 
