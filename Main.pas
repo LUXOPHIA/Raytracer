@@ -87,7 +87,7 @@ begin
      end;
 
      ////////// 地面
-
+     {
      _Ground := TRayGround.Create( _World );
      with _Ground do
      begin
@@ -100,7 +100,7 @@ begin
                DiffRatio := TSingleRGB.Create( 1, 1, 1 );
           end;
      end;
-
+     }
      ////////// 空
 
      _Sky := TRaySky.Create( _World );
@@ -116,31 +116,11 @@ begin
 
      ////////// 球
 
-     for N := 1 to 100 do
+     with TMyGeometry.Create( _World ) do
      begin
-          with TMyGeometry.Create( _World ) do
-          begin
-               Radius := 1;
+          Radius := 3;
 
-               LocalMatrix := TSingleM4.Translate( 10 * Random - 5,
-                                                   10 * Random - 5,
-                                                   10 * Random - 5 )
-                            * TSingleM4.RotateX( Pi2 * Random )
-                            * TSingleM4.RotateY( Pi2 * Random )
-                            * TSingleM4.RotateZ( Pi2 * Random )
-                            * TSingleM4.Scale( 0.2 + 0.8 * Random,
-                                               0.2 + 0.8 * Random,
-                                               0.2 + 0.8 * Random );
-
-               Material := TMyMaterial.Create;
-
-               with TMyMaterial( Material ) do
-               begin
-                    DiffRatio := TSingleRGB.Create( 0.2 + 0.8 * Random,
-                                                    0.2 + 0.8 * Random,
-                                                    0.2 + 0.8 * Random );
-               end;
-          end;
+          Material := TMaterialGlass.Create;
      end;
 end;
 
@@ -152,9 +132,9 @@ begin
 
      with _Render do
      begin
-          MaxSampleN := 64;
-          ConvN      := 4;
-          ConvE      := 1/32;
+          MaxSampleN := 1;
+          ConvN      := 1;
+          ConvE      := 1/8;
      end;
 
      MakeScene;

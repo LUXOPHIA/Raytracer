@@ -2,7 +2,7 @@
 
 interface //#################################################################### ■
 
-uses LUX, LUX.D3, LUX.Matrix.L4,
+uses LUX, LUX.D1, LUX.D2, LUX.D3, LUX.Matrix.L4,
      LUX.Raytrace, LUX.Raytrace.Geometry,
      LIB.Raytrace;
 
@@ -14,7 +14,7 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
      //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TMyGeometry
 
-     TMyGeometry = class( TRayGeometry )
+     TMyGeometry = class( TRayImplicit )
      private
        ///// メソッド
        procedure MakeLocalAABB;
@@ -23,7 +23,7 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        ///// アクセス
        procedure SetRadius( const Radius_:Single );
        ///// メソッド
-       function _RayCast( const LocalRay_:TSingleRay3D ) :TRayHit; override;
+       function DistanceFunc( const P_:TdSingle3D ) :TdSingle; override;
      public
        constructor Create; override;
        destructor Destroy; override;
@@ -68,43 +68,9 @@ end;
 
 /////////////////////////////////////////////////////////////////////// メソッド
 
-function TMyGeometry._RayCast( const LocalRay_:TSingleRay3D ) :TRayHit;
-var
-   A, B, C, D, D2, T0, T1 :Single;
+function TMyGeometry.DistanceFunc( const P_:TdSingle3D ) :TdSingle;
 begin
-     Result._Obj := nil;
-
-     with LocalRay_ do
-     begin
-          A := Vec.Siz2;
-          B := DotProduct( Pos, Vec );
-          C := Pos.Siz2 - Pow2( _Radius );
-     end;
-
-     D := Pow2( B ) - A * C;
-
-     if D > 0 then
-     begin
-          D2 := Roo2( D );
-
-          T1 := ( -B + D2 ) / A;
-
-          if T1 > _EPSILON_ then
-          begin
-               T0 := ( -B - D2 ) / A;
-
-               with Result do
-               begin
-                    _Obj := Self;
-
-                    if T0 > _EPSILON_ then _Len := T0
-                                      else _Len := T1;
-
-                    _Pos := LocalRay_.GoPos( _Len );
-                    _Nor := _Pos.Unitor;
-               end;
-          end;
-     end;
+     Result := P_.Size - _Radius;
 end;
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& public
