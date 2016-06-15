@@ -60,10 +60,10 @@ var
    I :Integer;
    L :TRayLight;
    A :TRayRay;
-   H, S :TRayHit;
+   H :TRayHit;
    D :Single;
 begin
-     Result := 0;
+     Result := TSingleRGB.Create( 0, 0, 0 );
 
      for I := 0 to World.LightsN-1 do
      begin

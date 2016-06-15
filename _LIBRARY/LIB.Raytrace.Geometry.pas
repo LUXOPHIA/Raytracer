@@ -16,19 +16,17 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
      TMyGeometry = class( TRayGeometry )
      private
-       ///// メソッド
-       procedure MakeLocalAABB;
      protected
        _Radius :Single;
        ///// アクセス
-       procedure SetRadius( const Radius_:Single );
+       function GetLocalAABB :TSingleArea3D; override;
        ///// メソッド
        function _RayCast( const LocalRay_:TRayRay ) :TRayHit; override;
      public
        constructor Create; override;
        destructor Destroy; override;
        ///// プロパティ
-       property Radius :Single read _Radius write SetRadius;
+       property Radius :Single read _Radius write _Radius;
      end;
 
 //const //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【定数】
@@ -51,20 +49,13 @@ uses System.SysUtils, System.Math;
 
 /////////////////////////////////////////////////////////////////////// アクセス
 
-procedure TMyGeometry.MakeLocalAABB;
+function TMyGeometry.GetLocalAABB :TSingleArea3D;
 begin
-     LocalAABB := TSingleArea3D.Create( -_Radius, -_Radius, -_Radius,
-                                        +_Radius, +_Radius, +_Radius );
+     Result := TSingleArea3D.Create( -_Radius, -_Radius, -_Radius,
+                                     +_Radius, +_Radius, +_Radius );
 end;
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& protected
-
-/////////////////////////////////////////////////////////////////////// アクセス
-
-procedure TMyGeometry.SetRadius( const Radius_:Single );
-begin
-     _Radius := Radius_;  MakeLocalAABB;
-end;
 
 /////////////////////////////////////////////////////////////////////// メソッド
 
