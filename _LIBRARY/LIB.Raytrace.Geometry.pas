@@ -21,7 +21,7 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        ///// アクセス
        function GetLocalAABB :TSingleArea3D; override;
        ///// メソッド
-       function _RayCast( const LocalRay_:TRayRay ) :TRayHit; override;
+       procedure _RayCast( var LocalRay_:TRayRay; var LocalHit_:TRayHit ); override;
      public
        constructor Create; override;
        destructor Destroy; override;
@@ -59,12 +59,10 @@ end;
 
 /////////////////////////////////////////////////////////////////////// メソッド
 
-function TMyGeometry._RayCast( const LocalRay_:TRayRay ) :TRayHit;
+procedure TMyGeometry._RayCast( var LocalRay_:TRayRay; var LocalHit_:TRayHit );
 var
    A, B, C, D, D2, T0, T1 :Single;
 begin
-     Result.Obj := nil;
-
      with LocalRay_.Ray do
      begin
           A := Vec.Siz2;
@@ -84,7 +82,7 @@ begin
           begin
                T0 := ( -B - D2 ) / A;
 
-               with Result do
+               with LocalHit_ do
                begin
                     Obj := Self;
 
