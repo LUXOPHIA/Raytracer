@@ -23,7 +23,7 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        ///// アクセス
        procedure SetRadius( const Radius_:Single );
        ///// メソッド
-       function _RayCast( const LocalRay_:TSingleRay3D ) :TRayHit; override;
+       function _RayCast( const LocalRay_:TRayRay ) :TRayHit; override;
      public
        constructor Create; override;
        destructor Destroy; override;
@@ -68,13 +68,13 @@ end;
 
 /////////////////////////////////////////////////////////////////////// メソッド
 
-function TMyGeometry._RayCast( const LocalRay_:TSingleRay3D ) :TRayHit;
+function TMyGeometry._RayCast( const LocalRay_:TRayRay ) :TRayHit;
 var
    A, B, C, D, D2, T0, T1 :Single;
 begin
      Result._Obj := nil;
 
-     with LocalRay_ do
+     with LocalRay_.Ray do
      begin
           A := Vec.Siz2;
           B := DotProduct( Pos, Vec );
@@ -100,7 +100,7 @@ begin
                     if T0 > _EPSILON_ then _Len := T0
                                       else _Len := T1;
 
-                    _Pos := LocalRay_.GoPos( _Len );
+                    _Pos := LocalRay_.Ray.GoPos( _Len );
                     _Nor := _Pos.Unitor;
                end;
           end;
