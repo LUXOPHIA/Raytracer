@@ -57,44 +57,36 @@ end;
 
 function TMyMaterial.Scatter( const WorldRay_:TRayRay; const WorldHit_:TRayHit ) :TSingleRGB;
 var
+   I :Integer;
    L :TRayLight;
    A :TRayRay;
-//･･････････････････････････････････････････････････････････････････････････････
-     procedure Diff;
-     var
-        D :Single;
-     begin
-          D := DotProduct( WorldHit_.Nor, A.Ray.Vec );  if D < 0 then D := 0;
-
-          Result := Result + D * L.Color * _DiffRatio;
-     end;
-//･･････････････････････････････････････････････････････････････････････････････
-var
-   I :Integer;
    H, S :TRayHit;
+   D :Single;
 begin
-     Result := TSingleRGB.Create( 0, 0, 0 );
+     Result := 0;
 
      for I := 0 to World.LightsN-1 do
      begin
           L := World.Lights[ I ];
 
-          H := L.RayJoin( WorldHit_.Pos );
-
           with A do
           begin
+             //Emt
                Ord     := WorldRay_.Ord + 1;
                Ray.Pos := WorldHit_.Pos;
-               Ray.Vec := WorldHit_.Pos.UnitorTo( H.Pos );
+             //Ray.Vec
+             //Len
+             //Hit
           end;
 
-          S := World.RayCasts( A );
-
-          if Assigned( S.Obj ) then
+          if L.RayJoins( A, H ) then
           begin
-               if S.Len >= H.Len then Diff;
-          end
-          else Diff;
+               D := DotProduct( WorldHit_.Nor, A.Ray.Vec );
+
+               if D < 0 then D := 0;
+
+               Result := Result + D * L.Color * _DiffRatio;
+          end;
      end;
 end;
 

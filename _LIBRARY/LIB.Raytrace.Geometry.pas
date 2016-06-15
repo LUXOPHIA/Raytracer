@@ -72,7 +72,7 @@ function TMyGeometry._RayCast( const LocalRay_:TRayRay ) :TRayHit;
 var
    A, B, C, D, D2, T0, T1 :Single;
 begin
-     Result._Obj := nil;
+     Result.Obj := nil;
 
      with LocalRay_.Ray do
      begin
@@ -95,13 +95,13 @@ begin
 
                with Result do
                begin
-                    _Obj := Self;
+                    Obj := Self;
 
-                    if T0 > _EPSILON_ then _Len := T0
-                                      else _Len := T1;
+                    if T0 > _EPSILON_ then Len := T0
+                                      else Len := T1;
 
-                    _Pos := LocalRay_.Ray.GoPos( _Len );
-                    _Nor := _Pos.Unitor;
+                   _Pos := LocalRay_.Ray.GoPos( Len );
+                   _Nor := _Pos.Unitor;
                end;
           end;
      end;
