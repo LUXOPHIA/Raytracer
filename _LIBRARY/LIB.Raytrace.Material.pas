@@ -23,7 +23,7 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        ///// プロパティ
        property DiffRatio :TSingleRGB read _DiffRatio write _DiffRatio;
        ///// メソッド
-       function Scatter( const WorldRay_:TRayRay; const Hit_:TRayHit ) :TSingleRGB; override;
+       function Scatter( const WorldRay_:TRayRay; const WorldHit_:TRayHit ) :TSingleRGB; override;
      end;
 
 //const //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【定数】
@@ -55,7 +55,7 @@ end;
 
 /////////////////////////////////////////////////////////////////////// メソッド
 
-function TMyMaterial.Scatter( const WorldRay_:TRayRay; const Hit_:TRayHit ) :TSingleRGB;
+function TMyMaterial.Scatter( const WorldRay_:TRayRay; const WorldHit_:TRayHit ) :TSingleRGB;
 var
    L :TRayLight;
    A :TRayRay;
@@ -64,7 +64,7 @@ var
      var
         D :Single;
      begin
-          D := DotProduct( Hit_.Nor, A.Ray.Vec );  if D < 0 then D := 0;
+          D := DotProduct( WorldHit_.Nor, A.Ray.Vec );  if D < 0 then D := 0;
 
           Result := Result + D * L.Color * _DiffRatio;
      end;
@@ -79,13 +79,13 @@ begin
      begin
           L := World.Lights[ I ];
 
-          H := L.RayJoin( Hit_.Pos );
+          H := L.RayJoin( WorldHit_.Pos );
 
           with A do
           begin
                Ord     := WorldRay_.Ord + 1;
-               Ray.Pos := Hit_.Pos;
-               Ray.Vec := Hit_.Pos.UnitorTo( H.Pos );
+               Ray.Pos := WorldHit_.Pos;
+               Ray.Vec := WorldHit_.Pos.UnitorTo( H.Pos );
           end;
 
           S := World.RayCasts( A );
