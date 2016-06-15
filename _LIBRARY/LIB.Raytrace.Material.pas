@@ -23,7 +23,7 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        ///// プロパティ
        property DiffRatio :TSingleRGB read _DiffRatio write _DiffRatio;
        ///// メソッド
-       function Scatter( const WorldRay_:TRayRay; const RayN_:Integer; const Hit_:TRayHit ) :TSingleRGB; override;
+       function Scatter( const WorldRay_:TRayRay; const Hit_:TRayHit ) :TSingleRGB; override;
      end;
 
 //const //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【定数】
@@ -55,7 +55,7 @@ end;
 
 /////////////////////////////////////////////////////////////////////// メソッド
 
-function TMyMaterial.Scatter( const WorldRay_:TRayRay; const RayN_:Integer; const Hit_:TRayHit ) :TSingleRGB;
+function TMyMaterial.Scatter( const WorldRay_:TRayRay; const Hit_:TRayHit ) :TSingleRGB;
 var
    L :TRayLight;
    A :TRayRay;
@@ -83,6 +83,7 @@ begin
 
           with A do
           begin
+               Ord     := WorldRay_.Ord + 1;
                Ray.Pos := Hit_.Pos;
                Ray.Vec := Hit_.Pos.UnitorTo( H.Pos );
           end;
