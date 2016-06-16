@@ -62,6 +62,10 @@ begin
      ////////// 世界
 
      _World := TRayWorld.Create;
+     with _World do
+     begin
+          RecursN := 8;
+     end;
 
      _Render.World := _World;
 
@@ -116,7 +120,7 @@ begin
 
      ////////// 球
 
-     for N := 1 to 100 do
+     for N := 1 to 64 do
      begin
           with TMyGeometry.Create( _World ) do
           begin
