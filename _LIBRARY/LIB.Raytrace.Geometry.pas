@@ -91,7 +91,8 @@ begin
                with LocalHit_ do
                begin
                     Obj := Self;
-                   _Nor := LocalHit_.Pos.Unitor;
+
+                    Nor := LocalHit_.Pos.Unitor;
                end;
           end;
      end;
