@@ -2,7 +2,7 @@
 
 interface //#################################################################### ■
 
-uses LUX, LUX.D3, LUX.Matrix.L4,
+uses LUX, LUX.D1, LUX.D3, LUX.Matrix.L4,
      LUX.Raytrace, LUX.Raytrace.Geometry,
      LIB.Raytrace;
 
@@ -21,7 +21,7 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        ///// アクセス
        function GetLocalAABB :TSingleArea3D; override;
        ///// メソッド
-       procedure _RayCast( var LocalRay_:TRayRay; var LocalHit_:TRayHit ); override;
+       procedure _RayCast( var LocalRay_:TRayRay; var LocalHit_:TRayHit; const Len_:TSingleArea ); override;
      public
        constructor Create; override;
        destructor Destroy; override;
@@ -59,7 +59,7 @@ end;
 
 /////////////////////////////////////////////////////////////////////// メソッド
 
-procedure TMyGeometry._RayCast( var LocalRay_:TRayRay; var LocalHit_:TRayHit );
+procedure TMyGeometry._RayCast( var LocalRay_:TRayRay; var LocalHit_:TRayHit; const Len_:TSingleArea );
 var
    A, B, C, D, D2, T0, T1 :Single;
 begin
