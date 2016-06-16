@@ -62,6 +62,10 @@ begin
      ////////// 世界
 
      _World := TRayWorld.Create;
+     with _World do
+     begin
+          RecursN := 8;
+     end;
 
      _Render.World := _World;
 
@@ -87,7 +91,7 @@ begin
      end;
 
      ////////// 地面
-     {
+
      _Ground := TRayGround.Create( _World );
      with _Ground do
      begin
@@ -100,7 +104,7 @@ begin
                DiffRatio := TSingleRGB.Create( 1, 1, 1 );
           end;
      end;
-     }
+
      ////////// 空
 
      _Sky := TRaySky.Create( _World );
@@ -116,11 +120,31 @@ begin
 
      ////////// 球
 
-     with TMyGeometry.Create( _World ) do
+     for N := 1 to 64 do
      begin
-          Radius := 3;
+          with TMyGeometry.Create( _World ) do
+          begin
+               Radius := 1;
 
-          Material := TMaterialGlass.Create;
+               LocalMatrix := TSingleM4.Translate( 10 * Random - 5,
+                                                   10 * Random - 5,
+                                                   10 * Random - 5 )
+                            * TSingleM4.RotateX( Pi2 * Random )
+                            * TSingleM4.RotateY( Pi2 * Random )
+                            * TSingleM4.RotateZ( Pi2 * Random )
+                            * TSingleM4.Scale( 0.2 + 0.8 * Random,
+                                               0.2 + 0.8 * Random,
+                                               0.2 + 0.8 * Random );
+
+               Material := TMyMaterial.Create;
+
+               with TMyMaterial( Material ) do
+               begin
+                    DiffRatio := TSingleRGB.Create( 0.2 + 0.8 * Random,
+                                                    0.2 + 0.8 * Random,
+                                                    0.2 + 0.8 * Random );
+               end;
+          end;
      end;
 end;
 
@@ -132,9 +156,9 @@ begin
 
      with _Render do
      begin
-          MaxSampleN := 1;
-          ConvN      := 1;
-          ConvE      := 1/8;
+          MaxSampleN := 64;
+          ConvN      := 4;
+          ConvE      := 1/32;
      end;
 
      MakeScene;

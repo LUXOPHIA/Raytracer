@@ -23,7 +23,7 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        ///// プロパティ
        property DiffRatio :TSingleRGB read _DiffRatio write _DiffRatio;
        ///// メソッド
-       function Scatter( const WorldEmt_:TRayHit; const WorldRay_:TRayRay; const Hit_:TRayHit ) :TSingleRGB; override;
+       function Scatter( const WorldRay_:TRayRay; const WorldHit_:TRayHit ) :TSingleRGB; override;
      end;
 
 //const //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【定数】
@@ -33,8 +33,6 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【ルーチン】
 
 implementation //############################################################### ■
-
-uses System.SysUtils;
 
 //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【レコード】
 
@@ -57,23 +55,13 @@ end;
 
 /////////////////////////////////////////////////////////////////////// メソッド
 
-function TMyMaterial.Scatter( const WorldEmt_:TRayHit; const WorldRay_:TRayRay; const Hit_:TRayHit ) :TSingleRGB;
-var
-   L :TRayLight;
-   A :TRayRay;
-//･･････････････････････････････････････････････････････････････････････････････
-     procedure Diff;
-     var
-        D :Single;
-     begin
-          D := DotProduct( Hit_.Nor, A.Ray.Vec );  if D < 0 then D := 0;
-
-          Result := Result + D * L.Color * _DiffRatio;
-     end;
-//･･････････････････････････････････････････････････････････････････････････････
+function TMyMaterial.Scatter( const WorldRay_:TRayRay; const WorldHit_:TRayHit ) :TSingleRGB;
 var
    I :Integer;
-   H, S :TRayHit;
+   L :TRayLight;
+   A :TRayRay;
+   H :TRayHit;
+   D :Single;
 begin
      Result := TSingleRGB.Create( 0, 0, 0 );
 
@@ -81,23 +69,34 @@ begin
      begin
           L := World.Lights[ I ];
 
-          L.RayJoin( Hit_, H );
-
           with A do
           begin
-               Emt     := @Hit_;
-               Ord     := WorldRay_.Ord;
-               Ray.Pos := Hit_.Pos;
-               Ray.Vec := Hit_.Pos.UnitorTo( H.Pos );
-               Len     := 0;
-               Hit     := nil;
+               Emt     := @WorldHit_;
+               Ord     := WorldRay_.Ord + 1;
+               Ray.Pos := WorldHit_.Pos;
+             //Ray.Vec
+             //Len
+               Hit     := @H;
           end;
 
-          if World.RayCasts( WorldEmt_, A, S ) then
+          with H do
           begin
-               if S.Len >= H.Len then Diff;
-          end
-          else Diff;
+               Ray := @A;
+               Obj := nil;
+             //Nor
+             //Tan
+             //Bin
+             //Tex
+          end;
+
+          if L.RayJoins( A, H ) then
+          begin
+               D := DotProduct( WorldHit_.Nor, A.Ray.Vec );
+
+               if D < 0 then D := 0;
+
+               Result := Result + D * L.Color * _DiffRatio;
+          end;
      end;
 end;
 

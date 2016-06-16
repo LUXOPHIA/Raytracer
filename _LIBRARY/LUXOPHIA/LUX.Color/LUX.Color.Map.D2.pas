@@ -17,8 +17,12 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
      TTexture2D = class( TBricArray2D<TSingleRGBA> )
      private
      protected
+       _Gamma :Single;
      public
+       constructor Create; overload;
        constructor Create( const FileName_:String ); overload;
+       ///// プロパティ
+       property Gamma :Single read _Gamma write _Gamma;
        ///// メソッド
        procedure LoadFromBitmap( const Bitmap_:TBitmap );
        procedure LoadFromFile( const FileName_:String );
@@ -48,6 +52,13 @@ uses System.Math;
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& public
 
+constructor TTexture2D.Create;
+begin
+     inherited;
+
+     _Gamma := 2.2;
+end;
+
 constructor TTexture2D.Create( const FileName_:String );
 begin
      Create;
@@ -59,10 +70,13 @@ end;
 
 procedure TTexture2D.LoadFromBitmap( const Bitmap_:TBitmap );
 var
+   RecG :Single;
    B :TBitmapData;
    X, Y :Integer;
    P :PAlphaColor;
 begin
+     RecG := 1 / _Gamma;
+
      BricX := Bitmap_.Width ;
      BricY := Bitmap_.Height;
 
@@ -74,7 +88,7 @@ begin
 
           for X := 0 to BricX-1 do
           begin
-               Bric[ X, Y ] := P^;  Inc( P );
+               Bric[ X, Y ] := GammaCorrect( TSingleRGBA( P^ ), RecG );  Inc( P );
           end;
      end;
 

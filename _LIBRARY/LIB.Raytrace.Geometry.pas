@@ -2,7 +2,7 @@
 
 interface //#################################################################### ■
 
-uses LUX, LUX.D1, LUX.D2, LUX.D3, LUX.Matrix.L4,
+uses LUX, LUX.D1, LUX.D3, LUX.Matrix.L4,
      LUX.Raytrace, LUX.Raytrace.Geometry,
      LIB.Raytrace;
 
@@ -14,21 +14,19 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
      //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TMyGeometry
 
-     TMyGeometry = class( TRayImplicit )
+     TMyGeometry = class( TRayGeometry )
      private
-       ///// メソッド
-       procedure MakeLocalAABB;
      protected
        _Radius :Single;
        ///// アクセス
-       procedure SetRadius( const Radius_:Single );
+       function GetLocalAABB :TSingleArea3D; override;
        ///// メソッド
-       function DistanceFunc( const P_:TdSingle3D ) :TdSingle; override;
+       procedure _RayCast( var LocalRay_:TRayRay; var LocalHit_:TRayHit; const Len_:TSingleArea ); override;
      public
        constructor Create; override;
        destructor Destroy; override;
        ///// プロパティ
-       property Radius :Single read _Radius write SetRadius;
+       property Radius :Single read _Radius write _Radius;
      end;
 
 //const //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$【定数】
@@ -51,26 +49,53 @@ uses System.SysUtils, System.Math;
 
 /////////////////////////////////////////////////////////////////////// アクセス
 
-procedure TMyGeometry.MakeLocalAABB;
+function TMyGeometry.GetLocalAABB :TSingleArea3D;
 begin
-     LocalAABB := TSingleArea3D.Create( -_Radius, -_Radius, -_Radius,
-                                        +_Radius, +_Radius, +_Radius );
+     Result := TSingleArea3D.Create( -_Radius, -_Radius, -_Radius,
+                                     +_Radius, +_Radius, +_Radius );
 end;
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& protected
 
-/////////////////////////////////////////////////////////////////////// アクセス
-
-procedure TMyGeometry.SetRadius( const Radius_:Single );
-begin
-     _Radius := Radius_;  MakeLocalAABB;
-end;
-
 /////////////////////////////////////////////////////////////////////// メソッド
 
-function TMyGeometry.DistanceFunc( const P_:TdSingle3D ) :TdSingle;
+procedure TMyGeometry._RayCast( var LocalRay_:TRayRay; var LocalHit_:TRayHit; const Len_:TSingleArea );
+var
+   A, B, C, D, D2, T0, T1 :Single;
 begin
-     Result := P_.Size - _Radius;
+     with LocalRay_.Ray do
+     begin
+          A := Vec.Siz2;
+          B := DotProduct( Pos, Vec );
+          C := Pos.Siz2 - Pow2( _Radius );
+     end;
+
+     D := Pow2( B ) - A * C;
+
+     if D > 0 then
+     begin
+          D2 := Roo2( D );
+
+          T1 := ( -B + D2 ) / A;
+
+          if T1 > 0 then
+          begin
+               T0 := ( -B - D2 ) / A;
+
+               with LocalRay_ do
+               begin
+                    if T0 > 0 then Len := T0
+                              else Len := T1;
+               end;
+
+               with LocalHit_ do
+               begin
+                    Obj := Self;
+
+                    Nor := LocalHit_.Pos.Unitor;
+               end;
+          end;
+     end;
 end;
 
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& public
