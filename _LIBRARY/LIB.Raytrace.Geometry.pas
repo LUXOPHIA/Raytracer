@@ -78,14 +78,14 @@ begin
 
           T1 := ( -B + D2 ) / A;
 
-          if T1 > _EPSILON_ then
+          if T1 > 0 then
           begin
                T0 := ( -B - D2 ) / A;
 
                with LocalRay_ do
                begin
-                    if T0 > _EPSILON_ then Len := T0
-                                      else Len := T1;
+                    if T0 > 0 then Len := T0
+                              else Len := T1;
                end;
 
                with LocalHit_ do

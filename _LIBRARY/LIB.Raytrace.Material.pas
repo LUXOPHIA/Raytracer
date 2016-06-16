@@ -71,12 +71,22 @@ begin
 
           with A do
           begin
-             //Emt
+               Emt     := @WorldHit_;
                Ord     := WorldRay_.Ord + 1;
                Ray.Pos := WorldHit_.Pos;
              //Ray.Vec
              //Len
-             //Hit
+               Hit     := @H;
+          end;
+
+          with H do
+          begin
+               Ray := @A;
+               Obj := nil;
+             //Nor
+             //Tan
+             //Bin
+             //Tex
           end;
 
           if L.RayJoins( A, H ) then
