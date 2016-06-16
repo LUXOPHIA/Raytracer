@@ -89,6 +89,8 @@ type //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
        class operator Divide( const A_:TSingleRGB; const B_:Single ): TSingleRGB;
        ///// å^ïœä∑
        class operator Implicit( const C_:Single ) :TSingleRGB;
+       class operator Implicit( const C_:TAlphaColor ) :TSingleRGB;
+       class operator Implicit( const C_:TSingleRGB ) :TAlphaColor;
        class operator Implicit( const C_:TByteRGB ) :TSingleRGB;
        class operator Implicit( const C_:TSingleRGB ) :TByteRGB;
      end;
@@ -145,6 +147,9 @@ function Distanc2( const C1_,C2_:TSingleRGBA ) :Single; overload;
 
 function Distance( const C1_,C2_:TSingleRGB ) :Single; overload;
 function Distance( const C1_,C2_:TSingleRGBA ) :Single; overload;
+
+function GammaCorrect( const C_:TSingleRGB; const G_:Single ) :TSingleRGB; overload;
+function GammaCorrect( const C_:TSingleRGBA; const G_:Single ) :TSingleRGBA; overload;
 
 implementation //############################################################### Å°
 
@@ -345,6 +350,16 @@ begin
           G := C_;
           B := C_;
      end;
+end;
+
+class operator TSingleRGB.Implicit( const C_:TAlphaColor ) :TSingleRGB;
+begin
+     Result := TByteRGB( C_ );
+end;
+
+class operator TSingleRGB.Implicit( const C_:TSingleRGB ) :TAlphaColor;
+begin
+     Result := TByteRGB( C_ );
 end;
 
 class operator TSingleRGB.Implicit( const C_:TByteRGB ) :TSingleRGB;
@@ -587,6 +602,37 @@ end;
 function Distance( const C1_,C2_:TSingleRGBA ) :Single;
 begin
      Result := Roo2( Distanc2( C1_, C2_ ) );
+end;
+
+//------------------------------------------------------------------------------
+
+function GammaCorrect( const C_:TSingleRGB; const G_:Single ) :TSingleRGB;
+var
+   RecG :Single;
+begin
+     RecG := 1 / G_;
+
+     with Result do
+     begin
+          R := Power( C_.R, RecG );
+          G := Power( C_.G, RecG );
+          B := Power( C_.B, RecG );
+     end;
+end;
+
+function GammaCorrect( const C_:TSingleRGBA; const G_:Single ) :TSingleRGBA;
+var
+   RecG :Single;
+begin
+     RecG := 1 / G_;
+
+     with Result do
+     begin
+          R := Power( C_.R, RecG );
+          G := Power( C_.G, RecG );
+          B := Power( C_.B, RecG );
+          A :=        C_.A        ;
+     end;
 end;
 
 //############################################################################## Å†
