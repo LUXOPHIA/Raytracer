@@ -82,15 +82,16 @@ begin
           begin
                T0 := ( -B - D2 ) / A;
 
+               with LocalRay_ do
+               begin
+                    if T0 > _EPSILON_ then Len := T0
+                                      else Len := T1;
+               end;
+
                with LocalHit_ do
                begin
                     Obj := Self;
-
-                    if T0 > _EPSILON_ then Len := T0
-                                      else Len := T1;
-
-                   _Pos := LocalRay_.Ray.GoPos( Len );
-                   _Nor := _Pos.Unitor;
+                   _Nor := LocalHit_.Pos.Unitor;
                end;
           end;
      end;
